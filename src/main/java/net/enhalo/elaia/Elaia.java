@@ -1,0 +1,113 @@
+package net.enhalo.elaia;
+
+import net.enhalo.elaia.mixin.VulkanConfig;
+import net.enhalo.elaia.vulkan.ElaiaDescriptorPool;
+import net.enhalo.elaia.vulkan.VulkanDescriptorPool;
+import net.enhalo.elaia.vulkan.VulkanInitializer;
+import net.enhalo.elaia.worldgen.ElaiaChunkGenerator;
+import net.enhalo.elaia.worldgen.WorldManager;
+import net.fabricmc.api.ModInitializer;
+
+import net.minecraft.registry.Registries;
+import net.minecraft.registry.Registry;
+import net.minecraft.util.Identifier;
+import net.vulkanmod.vulkan.Vulkan;
+import org.lwjgl.system.MemoryStack;
+import org.lwjgl.vulkan.*;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
+import org.lwjgl.vulkan.EXTDebugUtils.*;
+import org.lwjgl.vulkan.VkDebugUtilsMessengerCreateInfoEXT;
+import org.lwjgl.vulkan.VkDebugUtilsMessengerCallbackDataEXT;
+
+import java.nio.ByteBuffer;
+import java.nio.IntBuffer;
+import java.util.HashSet;
+import java.util.Set;
+
+import static org.lwjgl.vulkan.EXTDebugUtils.*;
+
+public class Elaia implements ModInitializer {
+	public static final String MOD_ID = "elaia";
+    public static final WorldManager worldManager = new WorldManager();
+
+	// This logger is used to write text to the console and the log file.
+	// It is considered best practice to use your mod id as the logger's name.
+	// That way, it's clear which mod wrote info, warnings, and errors.
+	public static final Logger LOGGER = LoggerFactory.getLogger(MOD_ID);
+    public static final ElaiaDescriptorPool DESCRIPTOR_POOL = new ElaiaDescriptorPool();
+
+	@Override
+	public void onInitialize() {
+		// This code runs as soon as Minecraft is in a mod-load-ready state.
+		// However, some things (like resources) may still be uninitialized.
+		// Proceed with mild caution.
+
+		LOGGER.info("Hello Fabric world!");
+
+        Registry.register(Registries.CHUNK_GENERATOR, Identifier.of(Elaia.MOD_ID, "chunkgenerator"),
+                ElaiaChunkGenerator.CODEC);
+
+        VulkanInitializer.onInitialized(() -> {
+            try (MemoryStack stack = MemoryStack.stackPush()) {
+                VkPhysicalDeviceProperties properties = VkPhysicalDeviceProperties.calloc(stack);
+                VK10.vkGetPhysicalDeviceProperties(Vulkan.getVkDevice().getPhysicalDevice(), properties);
+
+                // Query enabled extensions
+                IntBuffer pExtensionCount = stack.ints(0);
+                VK10.vkEnumerateDeviceExtensionProperties(Vulkan.getVkDevice().getPhysicalDevice(), (ByteBuffer) null, pExtensionCount, null);
+
+                VkExtensionProperties.Buffer extensions = VkExtensionProperties.calloc(pExtensionCount.get(0), stack);
+                VK10.vkEnumerateDeviceExtensionProperties(Vulkan.getVkDevice().getPhysicalDevice(), (ByteBuffer) null, pExtensionCount, extensions);
+
+                Set<String> requested_extensions = new HashSet<>(Set.of(
+                        "VK_KHR_shader_float16_int8",
+                        "VK_KHR_16bit_storage"
+                ));
+
+                for (int i = 0; i < extensions.capacity(); i++) {
+                    String name = extensions.get(i).extensionNameString();
+                    requested_extensions.remove(name);
+
+                }
+                if (!requested_extensions.isEmpty()) {
+                    LOGGER.error("Extensions not set: " + extensions);
+                    throw new RuntimeException("Extensions not set: " + extensions);
+                }
+                LOGGER.info("ALL EXTENSION SUPPORTED");
+            }
+            //initialize pool
+            DESCRIPTOR_POOL.initialize(1);
+
+            if (VulkanConfig.ENABLE_VALIDATION_LAYERS) {
+                VkDebugUtilsMessengerCallbackEXT callback = new VkDebugUtilsMessengerCallbackEXT(){
+                    @Override
+                    public int invoke(int messageSeverity, int messageTypes, long pCallbackData, long pUserData){
+                        VkDebugUtilsMessengerCallbackDataEXT data = VkDebugUtilsMessengerCallbackDataEXT.create(pCallbackData);
+                        System.out.println("[VULKAN] " + data.pMessageString());
+                        return VK10.VK_FALSE; // return VK_TRUE to abort (rarely used)
+                    }
+                };
+
+                try (MemoryStack stack = MemoryStack.stackPush()) {
+
+                    VkDebugUtilsMessengerCreateInfoEXT debugCreateInfo = VkDebugUtilsMessengerCreateInfoEXT.calloc(stack);
+                    debugCreateInfo.sType(VK_STRUCTURE_TYPE_DEBUG_UTILS_MESSENGER_CREATE_INFO_EXT);
+                    debugCreateInfo.messageSeverity(VK_DEBUG_UTILS_MESSAGE_SEVERITY_VERBOSE_BIT_EXT
+                            | VK_DEBUG_UTILS_MESSAGE_SEVERITY_WARNING_BIT_EXT
+                            | VK_DEBUG_UTILS_MESSAGE_SEVERITY_ERROR_BIT_EXT);
+                    debugCreateInfo.messageType(VK_DEBUG_UTILS_MESSAGE_TYPE_GENERAL_BIT_EXT
+                            | VK_DEBUG_UTILS_MESSAGE_TYPE_VALIDATION_BIT_EXT
+                            | VK_DEBUG_UTILS_MESSAGE_TYPE_PERFORMANCE_BIT_EXT);
+                    debugCreateInfo.pfnUserCallback(callback);
+                    debugCreateInfo.pUserData(0L);
+
+                    long[] pMessenger = new long[1];
+                    vkCreateDebugUtilsMessengerEXT(Vulkan.getVkDevice().getPhysicalDevice().getInstance(), debugCreateInfo, null, pMessenger);
+                }
+            }
+        });
+
+	}
+}

@@ -1,0 +1,20 @@
+{
+  "dimensions": {
+    "minecraft:overworld": {
+      "type": "elaia:dimension_type/continental",
+      "generator": {
+        "type": "elaia:chunkgenerator",
+        "height": 100,
+        "min_y": 0,
+        "biome_source": {
+          "type": "minecraft:fixed",
+          "biome": "elaia:biome/empty"
+        },
+        "sea_level": 64,
+        "world_height": 200,
+          "custom_block": "minecraft:stone"
+      }
+    }
+  },
+  "legacy_custom_options": ""
+}

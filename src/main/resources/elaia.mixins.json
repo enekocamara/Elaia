@@ -1,0 +1,21 @@
+{
+  "required": true,
+  "package": "net.enhalo.elaia.mixin",
+  "compatibilityLevel": "JAVA_21",
+  "mixins": [
+    "ExampleMixin",
+    "ValidationLayerMixin",
+    "VulkanExtensionMixin",
+    "VulkanInitMixin",
+    "VulkanInstanceExtensionMixin"
+  ],
+  "injectors": {
+    "defaultRequire": 1
+  },
+  "overwrites": {
+    "requireAnnotations": true
+  },
+  "client": [
+    "WorldTabMixin"
+  ]
+}
