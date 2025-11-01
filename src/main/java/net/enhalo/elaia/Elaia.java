@@ -2,6 +2,7 @@ package net.enhalo.elaia;
 
 import net.enhalo.elaia.mixin.VulkanConfig;
 import net.enhalo.elaia.vulkan.ElaiaDescriptorPool;
+import net.enhalo.elaia.vulkan.VulkanCommandPool;
 import net.enhalo.elaia.vulkan.VulkanDescriptorPool;
 import net.enhalo.elaia.vulkan.VulkanInitializer;
 import net.enhalo.elaia.worldgen.ElaiaChunkGenerator;
@@ -23,6 +24,7 @@ import org.lwjgl.vulkan.VkDebugUtilsMessengerCallbackDataEXT;
 
 import java.nio.ByteBuffer;
 import java.nio.IntBuffer;
+import java.util.Collection;
 import java.util.HashSet;
 import java.util.Set;
 
@@ -37,6 +39,7 @@ public class Elaia implements ModInitializer {
 	// That way, it's clear which mod wrote info, warnings, and errors.
 	public static final Logger LOGGER = LoggerFactory.getLogger(MOD_ID);
     public static final ElaiaDescriptorPool DESCRIPTOR_POOL = new ElaiaDescriptorPool();
+    public static final VulkanCommandPool computeCommandPool = new VulkanCommandPool();
 
 	@Override
 	public void onInitialize() {
@@ -77,35 +80,47 @@ public class Elaia implements ModInitializer {
                 }
                 LOGGER.info("ALL EXTENSION SUPPORTED");
             }
-            //initialize pool
-            DESCRIPTOR_POOL.initialize(1);
 
-            if (VulkanConfig.ENABLE_VALIDATION_LAYERS) {
-                VkDebugUtilsMessengerCallbackEXT callback = new VkDebugUtilsMessengerCallbackEXT(){
-                    @Override
-                    public int invoke(int messageSeverity, int messageTypes, long pCallbackData, long pUserData){
-                        VkDebugUtilsMessengerCallbackDataEXT data = VkDebugUtilsMessengerCallbackDataEXT.create(pCallbackData);
-                        System.out.println("[VULKAN] " + data.pMessageString());
-                        return VK10.VK_FALSE; // return VK_TRUE to abort (rarely used)
+            try (MemoryStack stack = MemoryStack.stackPush()) {
+                IntBuffer count = stack.ints(0);
+                VK10.vkEnumerateInstanceExtensionProperties((ByteBuffer) null, count, null); // total count
+                VkExtensionProperties.Buffer props = VkExtensionProperties.calloc(count.get(0), stack);
+                VK10.vkEnumerateInstanceExtensionProperties((ByteBuffer) null, count, props);
+
+                LOGGER.info("CHEKING FOR EXT layer");
+                for (int i = 0; i < props.capacity(); i++) {
+                    String extName = props.get(i).extensionNameString();
+                    if (extName.equals("VK_EXT_debug_utils")) {
+                        LOGGER.info("Debug utils extension is available!");
                     }
-                };
-
-                try (MemoryStack stack = MemoryStack.stackPush()) {
-
-                    VkDebugUtilsMessengerCreateInfoEXT debugCreateInfo = VkDebugUtilsMessengerCreateInfoEXT.calloc(stack);
-                    debugCreateInfo.sType(VK_STRUCTURE_TYPE_DEBUG_UTILS_MESSENGER_CREATE_INFO_EXT);
-                    debugCreateInfo.messageSeverity(VK_DEBUG_UTILS_MESSAGE_SEVERITY_VERBOSE_BIT_EXT
-                            | VK_DEBUG_UTILS_MESSAGE_SEVERITY_WARNING_BIT_EXT
-                            | VK_DEBUG_UTILS_MESSAGE_SEVERITY_ERROR_BIT_EXT);
-                    debugCreateInfo.messageType(VK_DEBUG_UTILS_MESSAGE_TYPE_GENERAL_BIT_EXT
-                            | VK_DEBUG_UTILS_MESSAGE_TYPE_VALIDATION_BIT_EXT
-                            | VK_DEBUG_UTILS_MESSAGE_TYPE_PERFORMANCE_BIT_EXT);
-                    debugCreateInfo.pfnUserCallback(callback);
-                    debugCreateInfo.pUserData(0L);
-
-                    long[] pMessenger = new long[1];
-                    vkCreateDebugUtilsMessengerEXT(Vulkan.getVkDevice().getPhysicalDevice().getInstance(), debugCreateInfo, null, pMessenger);
                 }
+                LOGGER.info("LAYER CHECK FINISHED");
+
+                //initialize pool
+                DESCRIPTOR_POOL.initialize(1);
+/*
+                if (VulkanConfig.ENABLE_VALIDATION_LAYERS) {
+                    VkDebugUtilsMessengerCreateInfoEXT debugCreateInfo = VkDebugUtilsMessengerCreateInfoEXT.calloc(stack);
+                    debugCreateInfo.sType(EXTDebugUtils.VK_STRUCTURE_TYPE_DEBUG_UTILS_MESSENGER_CREATE_INFO_EXT);
+                    debugCreateInfo.messageSeverity(
+                            EXTDebugUtils.VK_DEBUG_UTILS_MESSAGE_SEVERITY_VERBOSE_BIT_EXT |
+                                    EXTDebugUtils.VK_DEBUG_UTILS_MESSAGE_SEVERITY_WARNING_BIT_EXT |
+                                    EXTDebugUtils.VK_DEBUG_UTILS_MESSAGE_SEVERITY_ERROR_BIT_EXT
+                    );
+                    debugCreateInfo.messageType(
+                            EXTDebugUtils.VK_DEBUG_UTILS_MESSAGE_TYPE_GENERAL_BIT_EXT |
+                                    EXTDebugUtils.VK_DEBUG_UTILS_MESSAGE_TYPE_VALIDATION_BIT_EXT |
+                                    EXTDebugUtils.VK_DEBUG_UTILS_MESSAGE_TYPE_PERFORMANCE_BIT_EXT
+                    );
+                    debugCreateInfo.pfnUserCallback(new VkDebugUtilsMessengerCallbackEXT() {
+                        @Override
+                        public int invoke(int messageSeverity, int messageTypes, long pCallbackData, long pUserData) {
+                            VkDebugUtilsMessengerCallbackDataEXT data = VkDebugUtilsMessengerCallbackDataEXT.create(pCallbackData);
+                            LOGGER.info("[VULKAN] " + data.pMessageString());
+                            return VK10.VK_FALSE;
+                        }
+                    });
+                }*/
             }
         });
 

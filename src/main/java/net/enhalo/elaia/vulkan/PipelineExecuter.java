@@ -1,5 +1,6 @@
 package net.enhalo.elaia.vulkan;
 
+import net.enhalo.elaia.Elaia;
 import net.vulkanmod.vulkan.Vulkan;
 import net.vulkanmod.vulkan.device.DeviceManager;
 import org.lwjgl.PointerBuffer;
@@ -14,7 +15,7 @@ public class PipelineExecuter {
     }
     public static void asyncExecutePipeline(VulkanComputePipeline pipeline, VulkanDescriptorSet descriptorSet) {
         try (MemoryStack stack = MemoryStack.stackPush()) {
-            long commandPool = Vulkan.getCommandPool();
+            long commandPool = DeviceManager.getComputeQueue().getCommandPool().getId();
             VkCommandBufferAllocateInfo allocInfo = VkCommandBufferAllocateInfo.calloc(stack)
                     .sType(VK10.VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO)
                     .commandPool(commandPool) // A pool created with VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT
@@ -33,6 +34,21 @@ public class PipelineExecuter {
             VK10.vkBeginCommandBuffer(commandBuffer, beginInfo);
             VK10.vkCmdBindPipeline(commandBuffer, VK10.VK_PIPELINE_BIND_POINT_COMPUTE, pipeline.getPipelineHandle());
             LongBuffer descriptorSets = stack.longs(descriptorSet.getDescriptorSetHandle());
+
+            VkDescriptorImageInfo imageInfo = VkDescriptorImageInfo.calloc(stack)
+                    .imageView(myImageView)
+                    .imageLayout(VK10.VK_IMAGE_LAYOUT_GENERAL) // compute shaders usually use GENERAL
+                    .sampler(mySampler); // optional if needed
+            VkWriteDescriptorSet write = VkWriteDescriptorSet.calloc(stack)
+                    .sType(VK10.VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET)
+                    .dstSet(descriptorSet)
+                    .dstBinding(0) // binding index in shader
+                    .dstArrayElement(0)
+                    .descriptorType(VK10.VK_DESCRIPTOR_TYPE_STORAGE_IMAGE)
+                    .pImageInfo(imageInfo);
+
+            VK10.vkUpdateDescriptorSets(device, write, null);
+
             VK10.vkCmdBindDescriptorSets(
                     commandBuffer,
                     VK10.VK_PIPELINE_BIND_POINT_COMPUTE,
@@ -51,6 +67,7 @@ public class PipelineExecuter {
 
             VK10.vkQueueSubmit(DeviceManager.getComputeQueue().queue(), submitInfo, VK10.VK_NULL_HANDLE);
             VK10.vkQueueWaitIdle(DeviceManager.getComputeQueue().queue()); // Wait for GPU to finish
+            Elaia.LOGGER.info("Finished compute shader pass");
         }
     }
 }
