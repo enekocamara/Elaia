@@ -4,6 +4,7 @@ import com.mojang.blaze3d.systems.RenderSystem;
 import net.enhalo.elaia.Elaia;
 //import noise.com.noise.FastNoiseLite;
 import net.enhalo.elaia.Elaia;
+import net.enhalo.elaia.ElaiaClient;
 import net.enhalo.elaia.screen.NoisePreviewScreen;
 import net.fabricmc.fabric.api.client.event.lifecycle.v1.ClientTickEvents;
 import net.minecraft.block.Blocks;
@@ -16,8 +17,8 @@ public class CustomWorld {
 
     private final long seed;
     private final ContinentalTexture continental_texture;
-    private final  int width = 2000;
-    private final int height = 2000;
+    private final  int width = 2048;
+    private final int height = 2048;
     private final DimensionType dimension_type;
     //private FastNoiseLite noise = new FastNoiseLite();
     //
@@ -35,6 +36,20 @@ public class CustomWorld {
         catch(Exception e) {
             throw new RuntimeException("Failed to create custom world: failed to create continental texture: " + e.getMessage());
         }
+        ClientTickEvents.END_CLIENT_TICK.register(client -> {
+            RenderSystem.assertOnRenderThreadOrInit();
+            if (ElaiaClient.openShaderScreen.wasPressed()) {
+                if (noiseScreen == null) {
+                    noiseScreen = new NoisePreviewScreen(width, height,
+                            continental_texture.getPlatetext(),
+                            "continental_noise");
+                    Elaia.LOGGER.info("Creating NoisePreviewScreen");
+                }
+
+                client.setScreen(noiseScreen);
+                //TutorialMod.LOGGER.info("rendering texture: " + this.cont_textureId);
+            }
+        });
 /*
         continental_program = new OpenglShaderProgram("/assets/tutorialmod/shaders/continental_map");
 

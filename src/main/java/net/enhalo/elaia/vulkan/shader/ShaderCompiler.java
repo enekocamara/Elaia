@@ -1,7 +1,6 @@
-package net.enhalo.elaia.vulkan;
+package net.enhalo.elaia.vulkan.shader;
 
 import net.enhalo.elaia.Elaia;
-import org.lwjgl.system.MemoryUtil;
 import org.lwjgl.util.shaderc.Shaderc;
 
 import java.io.FileNotFoundException;

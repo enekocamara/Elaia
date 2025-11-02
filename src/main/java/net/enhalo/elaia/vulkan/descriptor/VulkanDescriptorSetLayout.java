@@ -1,4 +1,4 @@
-package net.enhalo.elaia.vulkan;
+package net.enhalo.elaia.vulkan.descriptor;
 
 import net.vulkanmod.vulkan.Vulkan;
 import org.lwjgl.system.MemoryStack;
@@ -8,7 +8,6 @@ import org.lwjgl.vulkan.VkDescriptorSetLayoutCreateInfo;
 
 import java.nio.LongBuffer;
 import java.util.List;
-import java.util.Vector;
 
 public class VulkanDescriptorSetLayout {
     public final long descriptor_set_layout_handle;
@@ -30,9 +29,9 @@ public class VulkanDescriptorSetLayout {
         private final VkDescriptorSetLayoutBinding.Buffer buffer;
         private int asignedBindingCount = 0;
         public Builder(int count){
-            try (MemoryStack stack = MemoryStack.stackPush()){
-                buffer = VkDescriptorSetLayoutBinding.calloc(count, stack);
-            }
+            //try (MemoryStack stack = MemoryStack.stackPush()){
+                buffer = VkDescriptorSetLayoutBinding.calloc(count);
+            //}
         }
         public Builder setBinding(int type, int count, int stageFlags) throws RuntimeException{
             if (asignedBindingCount > buffer.capacity())

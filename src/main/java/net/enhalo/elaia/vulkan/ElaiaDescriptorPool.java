@@ -19,7 +19,7 @@ public class ElaiaDescriptorPool {
         poolSizeMap = new HashMap<>();
     }
 
-    void addPoolSize(int type, int count) throws RuntimeException{
+    public void addPoolSize(int type, int count) throws RuntimeException{
         if (initialized){
             throw new RuntimeException("ElaiaDescriptorPool:addPoolSize: DescriptorPool already initialized");
         }
@@ -29,8 +29,6 @@ public class ElaiaDescriptorPool {
         }else
             poolSizeMap.put(type, count);
     }
-
-
     public void initialize(int sets){
         initialized = true;
         try (MemoryStack stack = MemoryStack.stackPush()) {

@@ -1,4 +1,4 @@
-package net.enhalo.elaia.vulkan;
+package net.enhalo.elaia.vulkan.shader;
 
 import net.vulkanmod.vulkan.Vulkan;
 import org.lwjgl.system.MemoryStack;
@@ -7,8 +7,6 @@ import org.lwjgl.vulkan.VkShaderModuleCreateInfo;
 import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.nio.LongBuffer;
-import java.nio.file.Files;
-import java.nio.file.Paths;
 
 import static org.lwjgl.vulkan.VK10.*;
 

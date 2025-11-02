@@ -6,10 +6,14 @@ import org.lwjgl.vulkan.VkImageCreateInfo;
 
 import java.util.function.Consumer;
 
-public class VulkanTexture2D {
-    private final VulkanTexture texture;
-    private VulkanTexture2D(VkImageCreateInfo info){
-        texture = new VulkanTexture(info);
+public class VulkanImage2D {
+    private final VulkanImage image;
+    private VulkanImage2D(VkImageCreateInfo info){
+        image = new VulkanImage(info);
+    }
+
+    public VulkanImage getImage() {
+        return image;
     }
 
     public static class Builder{
@@ -39,8 +43,8 @@ public class VulkanTexture2D {
             return this;
         }
 
-        public VulkanTexture2D build(){
-            return new VulkanTexture2D(info);
+        public VulkanImage2D build(){
+            return new VulkanImage2D(info);
         }
     }
 }

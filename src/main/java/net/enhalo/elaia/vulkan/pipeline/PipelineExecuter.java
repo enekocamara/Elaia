@@ -1,6 +1,7 @@
-package net.enhalo.elaia.vulkan;
+package net.enhalo.elaia.vulkan.pipeline;
 
 import net.enhalo.elaia.Elaia;
+import net.enhalo.elaia.vulkan.descriptor.VulkanDescriptorSet;
 import net.vulkanmod.vulkan.Vulkan;
 import net.vulkanmod.vulkan.device.DeviceManager;
 import org.lwjgl.PointerBuffer;
@@ -21,6 +22,7 @@ public class PipelineExecuter {
                     .commandPool(commandPool) // A pool created with VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT
                     .level(VK10.VK_COMMAND_BUFFER_LEVEL_PRIMARY)
                     .commandBufferCount(1);
+
 
             PointerBuffer pCommandBuffer = stack.mallocPointer(1);
             VK10.vkAllocateCommandBuffers(Vulkan.getVkDevice(), allocInfo, pCommandBuffer);
@@ -45,7 +47,12 @@ public class PipelineExecuter {
             );
 
             // Dispatch compute shader
-            VK10.vkCmdDispatch(commandBuffer, 1, 1, 1);
+            int localSize = 16;
+            int tileSize = 2048;
+            int groups = tileSize / localSize; // 128
+
+            VK10.vkCmdDispatch(commandBuffer, groups, groups, 1); // (128, 128, 1)
+
 
             VK10.vkEndCommandBuffer(commandBuffer);
 

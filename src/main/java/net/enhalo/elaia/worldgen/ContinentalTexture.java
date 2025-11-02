@@ -2,39 +2,45 @@ package net.enhalo.elaia.worldgen;
 
 
 
-import static net.enhalo.elaia.Elaia.LOGGER;
-import static org.lwjgl.opengl.GL11.*;
-import static org.lwjgl.opengl.GL30.*;
 import static org.lwjgl.vulkan.VK10.*;
 
 import net.enhalo.elaia.Elaia;
-import net.enhalo.elaia.vulkan.*;
-import net.minecraft.util.Pair;
-import org.lwjgl.BufferUtils;
-import org.lwjgl.opengl.*;
+import net.enhalo.elaia.vulkan.descriptor.VulkanDescriptorSet;
+import net.enhalo.elaia.vulkan.descriptor.VulkanDescriptorSetLayout;
+
+import net.enhalo.elaia.vulkan.image.VulkanSampler;
+import net.enhalo.elaia.vulkan.pipeline.PipelineExecuter;
+import net.enhalo.elaia.vulkan.pipeline.VulkanComputePipeline;
+import net.enhalo.elaia.vulkan.pipeline.VulkanPipelineLayout;
+import net.enhalo.elaia.vulkan.shader.VulkanShaderModule;
+import net.vulkanmod.vulkan.Vulkan;
+import net.vulkanmod.vulkan.texture.VulkanImage;
+import org.lwjgl.system.MemoryStack;
 import org.lwjgl.vulkan.VK10;
+import org.lwjgl.vulkan.VkDescriptorImageInfo;
+import org.lwjgl.vulkan.VkWriteDescriptorSet;
 
 import java.io.IOException;
-import java.nio.IntBuffer;
 import java.util.*;
 
 public class ContinentalTexture {
-    private final VulkanTexture2D plate_text;
-    private final VulkanComputePipeline plate_pipeline;
-    //private final VulkanTexture2D plate_features_text;
+    private final VulkanImage platetext;
+    private final VulkanComputePipeline platePipeline;
+    private final VulkanSampler basicSampler;
+    private final long plateImgView;
+    //private final VulkanImage2D plate_features_text;
     //private final VulkanComputePipeline plate_features_pipeline;
     //private final Map<Vec2i, Plate> plates;
-    private final static int WIDTH = 2000;
-    private final static int HEIGHT = 2000;
+    private final static int WIDTH = 2048;
+    private final static int HEIGHT = 2048;
 
     ContinentalTexture(long seed) {
-        plate_text = new VulkanTexture2D.Builder().
-                extent((extent) -> {
-                    extent.width(WIDTH);
-                    extent.height(HEIGHT);})
-                .format(VK10.VK_FORMAT_R32G32_SINT)
-                .usage(VK_IMAGE_USAGE_TRANSFER_SRC_BIT | VK_IMAGE_USAGE_STORAGE_BIT | VK_IMAGE_USAGE_SAMPLED_BIT)
-                .build();
+        platetext = new VulkanImage.Builder(WIDTH, HEIGHT)
+                .setFormat(VK10.VK_FORMAT_R32G32_SINT)
+                .setUsage(VK_IMAGE_USAGE_TRANSFER_SRC_BIT | VK_IMAGE_USAGE_STORAGE_BIT | VK_IMAGE_USAGE_SAMPLED_BIT)
+                .createVulkanImage();
+        plateImgView = platetext.getImageView();
+        basicSampler = new VulkanSampler();
 
         VulkanDescriptorSetLayout descriptorSetLayout =  new VulkanDescriptorSetLayout
                 .Builder(1)
@@ -45,9 +51,9 @@ public class ContinentalTexture {
                 new VulkanDescriptorSetLayout.Buffer(List.of(descriptorSetLayout));
 
         try{
-        plate_pipeline = new VulkanComputePipeline(
-                new VulkanPipelineLayout(descriptorSetLayoutBuffer),
-                new VulkanShaderModule("/assets/elaia/shaders/simple")
+            platePipeline = new VulkanComputePipeline(
+                    new VulkanPipelineLayout(descriptorSetLayoutBuffer),
+                    new VulkanShaderModule("/assets/elaia/shaders/simple")
         );
         }catch (IOException | RuntimeException e){
             throw new RuntimeException("Failed to create vulkan compute pipeline" + e.getMessage());
@@ -55,7 +61,22 @@ public class ContinentalTexture {
 
         VulkanDescriptorSet descriptorSet = new VulkanDescriptorSet(descriptorSetLayout, Elaia.DESCRIPTOR_POOL.getDescriptorPoolHandle());
 
-        PipelineExecuter.executePipeline(plate_pipeline, descriptorSet);
+        try (MemoryStack stack = MemoryStack.stackPush()) {
+            VkDescriptorImageInfo imageInfo = VkDescriptorImageInfo.calloc(stack)
+                    .imageView(plateImgView)
+                    .imageLayout(VK10.VK_IMAGE_LAYOUT_GENERAL) // compute shaders usually use GENERAL
+                    .sampler(VK_NULL_HANDLE); // optional if needed
+            VkWriteDescriptorSet write = VkWriteDescriptorSet.calloc(stack)
+                    .sType(VK10.VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET)
+                    .dstSet(descriptorSet.getDescriptorSetHandle())
+                    .dstBinding(0) // binding index in shader
+                    .descriptorCount(1)
+                    .descriptorType(VK10.VK_DESCRIPTOR_TYPE_STORAGE_IMAGE)
+                    .pImageInfo(VkDescriptorImageInfo.calloc(1, stack).put(0, imageInfo));
+
+            VK10.vkUpdateDescriptorSets(Vulkan.getVkDevice(), VkWriteDescriptorSet.calloc(1, stack).put(0, write), null);
+        }
+        PipelineExecuter.executePipeline(platePipeline, descriptorSet);
         /*
         programRunner.runProgram(plate_pipeline.program,plate_id_text.getTextureID(), WIDTH,HEIGHT,(prog) -> {
             int loc = GL20.glGetUniformLocation(prog, "iSeed");
@@ -94,7 +115,7 @@ public class ContinentalTexture {
 
     }
 
-    /*public VulkanTexture2D get_continental_texture(){
+    /*public VulkanImage2D get_continental_texture(){
         return plate_features_text;
     }
 
@@ -206,5 +227,18 @@ public class ContinentalTexture {
         }
     }
     */
+
+    public VulkanImage getPlatetext(){
+        return platetext;
+    }
+    public VulkanComputePipeline getplatePipeline(){
+        return platePipeline;
+    }
+    public VulkanSampler getbasicSampler(){
+        return basicSampler;
+    }
+    public long getplateTextView(){
+        return plateImgView;
+    }
 
 }

@@ -1,34 +1,29 @@
 package net.enhalo.elaia;
 
-import net.enhalo.elaia.mixin.VulkanConfig;
 import net.enhalo.elaia.vulkan.ElaiaDescriptorPool;
 import net.enhalo.elaia.vulkan.VulkanCommandPool;
-import net.enhalo.elaia.vulkan.VulkanDescriptorPool;
 import net.enhalo.elaia.vulkan.VulkanInitializer;
 import net.enhalo.elaia.worldgen.ElaiaChunkGenerator;
 import net.enhalo.elaia.worldgen.WorldManager;
 import net.fabricmc.api.ModInitializer;
 
+import net.fabricmc.fabric.api.client.keybinding.v1.KeyBindingHelper;
+import net.minecraft.client.option.KeyBinding;
+import net.minecraft.client.util.InputUtil;
 import net.minecraft.registry.Registries;
 import net.minecraft.registry.Registry;
 import net.minecraft.util.Identifier;
 import net.vulkanmod.vulkan.Vulkan;
+import org.lwjgl.glfw.GLFW;
 import org.lwjgl.system.MemoryStack;
 import org.lwjgl.vulkan.*;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import org.lwjgl.vulkan.EXTDebugUtils.*;
-import org.lwjgl.vulkan.VkDebugUtilsMessengerCreateInfoEXT;
-import org.lwjgl.vulkan.VkDebugUtilsMessengerCallbackDataEXT;
-
 import java.nio.ByteBuffer;
 import java.nio.IntBuffer;
-import java.util.Collection;
 import java.util.HashSet;
 import java.util.Set;
-
-import static org.lwjgl.vulkan.EXTDebugUtils.*;
 
 public class Elaia implements ModInitializer {
 	public static final String MOD_ID = "elaia";
@@ -97,31 +92,11 @@ public class Elaia implements ModInitializer {
                 LOGGER.info("LAYER CHECK FINISHED");
 
                 //initialize pool
+                DESCRIPTOR_POOL.addPoolSize(VK10.VK_DESCRIPTOR_TYPE_STORAGE_IMAGE, 1);
                 DESCRIPTOR_POOL.initialize(1);
-/*
-                if (VulkanConfig.ENABLE_VALIDATION_LAYERS) {
-                    VkDebugUtilsMessengerCreateInfoEXT debugCreateInfo = VkDebugUtilsMessengerCreateInfoEXT.calloc(stack);
-                    debugCreateInfo.sType(EXTDebugUtils.VK_STRUCTURE_TYPE_DEBUG_UTILS_MESSENGER_CREATE_INFO_EXT);
-                    debugCreateInfo.messageSeverity(
-                            EXTDebugUtils.VK_DEBUG_UTILS_MESSAGE_SEVERITY_VERBOSE_BIT_EXT |
-                                    EXTDebugUtils.VK_DEBUG_UTILS_MESSAGE_SEVERITY_WARNING_BIT_EXT |
-                                    EXTDebugUtils.VK_DEBUG_UTILS_MESSAGE_SEVERITY_ERROR_BIT_EXT
-                    );
-                    debugCreateInfo.messageType(
-                            EXTDebugUtils.VK_DEBUG_UTILS_MESSAGE_TYPE_GENERAL_BIT_EXT |
-                                    EXTDebugUtils.VK_DEBUG_UTILS_MESSAGE_TYPE_VALIDATION_BIT_EXT |
-                                    EXTDebugUtils.VK_DEBUG_UTILS_MESSAGE_TYPE_PERFORMANCE_BIT_EXT
-                    );
-                    debugCreateInfo.pfnUserCallback(new VkDebugUtilsMessengerCallbackEXT() {
-                        @Override
-                        public int invoke(int messageSeverity, int messageTypes, long pCallbackData, long pUserData) {
-                            VkDebugUtilsMessengerCallbackDataEXT data = VkDebugUtilsMessengerCallbackDataEXT.create(pCallbackData);
-                            LOGGER.info("[VULKAN] " + data.pMessageString());
-                            return VK10.VK_FALSE;
-                        }
-                    });
-                }*/
+
             }
+
         });
 
 	}

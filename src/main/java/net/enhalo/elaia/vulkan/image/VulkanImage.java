@@ -1,29 +1,55 @@
 package net.enhalo.elaia.vulkan.image;
 
 import net.vulkanmod.vulkan.Vulkan;
-import org.lwjgl.vulkan.VK10;
-import org.lwjgl.vulkan.VkDevice;
-import org.lwjgl.vulkan.VkImageCreateInfo;
+import org.lwjgl.system.MemoryStack;
+import org.lwjgl.vulkan.*;
 
-public class VulkanTexture {
-    private final long handle;
+import java.nio.LongBuffer;
 
-    VulkanTexture(VkImageCreateInfo info){
+import static net.enhalo.elaia.vulkan.VulkanUtil.findMemoryType;
+
+public class VulkanImage {
+    private final long imageHandle;
+    private final int format;
+    private final long memoryHandle;
+
+    VulkanImage(VkImageCreateInfo info){
+        this.format = info.format();
         VkDevice device = Vulkan.getVkDevice();
         long[] handle_ptr = new long[1];
         VK10.vkCreateImage(device, info, null, handle_ptr);
-        this.handle = handle_ptr[0];
+        this.imageHandle = handle_ptr[0];
+
+
+        try (MemoryStack stack = MemoryStack.stackPush()) {
+            VkMemoryRequirements memRequirements = VkMemoryRequirements.calloc(stack);
+
+            VK10.vkGetImageMemoryRequirements(device, imageHandle, memRequirements);
+
+            VkMemoryAllocateInfo allocInfo = VkMemoryAllocateInfo.calloc(stack)
+                    .sType(VK10.VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO)
+                    .allocationSize(memRequirements.size())
+                    .memoryTypeIndex(findMemoryType(
+                            memRequirements.memoryTypeBits(),
+                            VK10.VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT
+                    ));
+
+            LongBuffer pMemory = stack.mallocLong(1);
+            VK10.vkAllocateMemory(device, allocInfo, null, pMemory);
+            memoryHandle = pMemory.get(0);
+
+            VK10.vkBindImageMemory(device, imageHandle, memoryHandle, 0);
+        }
     }
-    VkImageCreateInfo imageInfo = VkImageCreateInfo.calloc()
-            .sType(VK10.VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO)
-            .imageType(VK10.VK_IMAGE_TYPE_2D)
-            .format(VK10.VK_FORMAT_R8G8B8A8_UNORM)
-            .extent(e -> e.width(512).height(512).depth(1))
-            .mipLevels(1)
-            .arrayLayers(1)
-            .samples(VK10.VK_SAMPLE_COUNT_1_BIT)
-            .tiling(VK10.VK_IMAGE_TILING_OPTIMAL)
-            .usage(VK10.VK_IMAGE_USAGE_SAMPLED_BIT | VK10.VK_IMAGE_USAGE_TRANSFER_DST_BIT)
-            .sharingMode(VK10.VK_SHARING_MODE_EXCLUSIVE)
-            .initialLayout(VK10.VK_IMAGE_LAYOUT_UNDEFINED);
+
+    public int getFormat() {
+        return format;
+    }
+
+    public long getImageHandle() {
+        return imageHandle;
+    }
+    public long getMemoryHandle() {
+        return memoryHandle;
+    }
 }

@@ -1,4 +1,4 @@
-package net.enhalo.elaia.vulkan;
+package net.enhalo.elaia.vulkan.descriptor;
 
 public class VulkanDescriptorPool {
 

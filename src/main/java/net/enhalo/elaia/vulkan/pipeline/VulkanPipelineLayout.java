@@ -1,5 +1,6 @@
-package net.enhalo.elaia.vulkan;
+package net.enhalo.elaia.vulkan.pipeline;
 
+import net.enhalo.elaia.vulkan.descriptor.VulkanDescriptorSetLayout;
 import net.vulkanmod.vulkan.Vulkan;
 import org.lwjgl.system.MemoryStack;
 import org.lwjgl.vulkan.VK10;

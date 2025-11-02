@@ -1,4 +1,4 @@
-package net.enhalo.elaia.vulkan;
+package net.enhalo.elaia.vulkan.descriptor;
 
 import net.vulkanmod.vulkan.Vulkan;
 import org.lwjgl.system.MemoryStack;

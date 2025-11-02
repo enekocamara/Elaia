@@ -20,8 +20,11 @@
 		],
 		"fabric-datagen": [
 			"net.enhalo.elaia.ElaiaDataGenerator"
-		]
-	},
+		],
+        "client": [
+          "net.enhalo.elaia.ElaiaClient"
+        ]
+    },
 	"mixins": [
 		"elaia.mixins.json"
 	],
