@@ -35,19 +35,7 @@ public class PipelineExecuter {
             VK10.vkCmdBindPipeline(commandBuffer, VK10.VK_PIPELINE_BIND_POINT_COMPUTE, pipeline.getPipelineHandle());
             LongBuffer descriptorSets = stack.longs(descriptorSet.getDescriptorSetHandle());
 
-            VkDescriptorImageInfo imageInfo = VkDescriptorImageInfo.calloc(stack)
-                    .imageView(myImageView)
-                    .imageLayout(VK10.VK_IMAGE_LAYOUT_GENERAL) // compute shaders usually use GENERAL
-                    .sampler(mySampler); // optional if needed
-            VkWriteDescriptorSet write = VkWriteDescriptorSet.calloc(stack)
-                    .sType(VK10.VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET)
-                    .dstSet(descriptorSet)
-                    .dstBinding(0) // binding index in shader
-                    .dstArrayElement(0)
-                    .descriptorType(VK10.VK_DESCRIPTOR_TYPE_STORAGE_IMAGE)
-                    .pImageInfo(imageInfo);
 
-            VK10.vkUpdateDescriptorSets(device, write, null);
 
             VK10.vkCmdBindDescriptorSets(
                     commandBuffer,

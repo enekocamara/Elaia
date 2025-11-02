@@ -1,4 +1,4 @@
-package net.enhalo.elaia.vulkan;
+package net.enhalo.elaia.vulkan.image;
 
 import net.vulkanmod.vulkan.Vulkan;
 import org.lwjgl.vulkan.VK10;
