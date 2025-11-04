@@ -14,8 +14,8 @@ import org.spongepowered.asm.mixin.Unique;
 @Mixin(Chunk.class)
 
 public abstract class ChunkMixin implements BiomeAccess.Storage, LightSourceView, StructureHolder, AttachmentTarget {
-    @Unique
-    private MyBlockStorage elaia$storage; // your custom memory layout
-    Block
+    //@Unique
+    //private MyBlockStorage elaia$storage; // your custom memory layout
+    //Block
 }
 

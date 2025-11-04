@@ -79,13 +79,24 @@ tasks.withType(JavaExec).configureEach {
     jvmArgs += ["--enable-preview"]
 }
 
+tasks.register('runPanama', JavaExec) {
+    classpath = sourceSets.test.runtimeClasspath
+    mainClass = 'test.TestPanama'
+    jvmArgs '--enable-preview'
+}
 
 tasks.withType(Jar).configureEach {
     manifest {
         attributes(
                 'Add-Opens': '--enable-preview'
+
         )
     }
+}
+import net.fabricmc.loom.task.RunGameTask
+
+tasks.withType(RunGameTask).configureEach {
+    jvmArgs '--enable-preview', '--enable-native-access=ALL-UNNAMED'
 }
 
 
