@@ -1,7 +1,13 @@
 package test;
 
+import net.fabricmc.loader.impl.lib.sat4j.core.Vec;
+import net.minecraft.util.math.Vec3i;
+import org.joml.Vector2i;
+import org.joml.Vector3i;
+
 import java.util.HashMap;
 import java.util.Vector;
+
 
 public class Compresion {
     short key;
@@ -32,6 +38,9 @@ public class Compresion {
         public Vector<Node> nodestype;
         HashMap<Integer, State> statesIDvalue;
         HashMap<Integer, State> typeIDvalue;
+        public Vector2i location = new Vector2i(0,0,0);
+        public Vector3i bot = new Vector3i(0,0,0);
+
 
         public class Node{
             Vector<Integer> childs;
@@ -39,11 +48,7 @@ public class Compresion {
             int valueID;
         }
 
-        void insert(short post, short value){
-
-        }
-
-        void insert(short pos, short value){
+        public set(Vec3i postion, int value){
 
         }
     }
